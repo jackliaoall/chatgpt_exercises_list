@@ -1,0 +1,36 @@
+Ref: https://www.youtube.com/watch?v=0GXI9148dxg&t=309s
+
+1.Create config.json
+從https://chat.openai.com取得 session_token(__Secure-next-auth.session-token)
+{
+    "session_token": "..."
+}
+
+2.install revChatGPT
+pip install revChatGPT==1.2.1
+pip install tls_client undetected_chromedriver
+
+3.pip show revChatGPT
+=>c:\users\jack\anaconda3\lib\site-packages
+
+4.modify Unofficial.py
+code C:\users\jack\anaconda3\lib\site-packages\revChatGPT\Unofficial.py
+
+5.search configure(), modify config_files
+config_files = ["C:/Users/jack/Desktop/test/test1/config.json"]
+
+6.Login
+python -m revChatGPT.Unofficial
+
+-------------------------------------------------------------------------------------
+ChatGPT - A command-line interface to OpenAI's ChatGPT (https://chat.openai.com/chat)
+
+Type '!help' to show a full list of commands
+Press enter twice to submit your question.
+
+Logging in...
+Spawning browser...
+Browser spawned.
+Found Cloudflare Cookie!
+
+You:
