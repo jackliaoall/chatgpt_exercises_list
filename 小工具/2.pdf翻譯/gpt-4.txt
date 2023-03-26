@@ -1,0 +1,102 @@
+GPT-4 Technical Report
+OpenAI
+Abstract
+We report the development of GPT-4, a large-scale, multimodal model which can
+accept image and text inputs and produce text outputs.While less capable than
+humans in many real-world scenarios, GPT-4 exhibits human-level performance
+on various professional and academic benchmarks, including passing a simulated
+bar exam with a score around the top 10% of test takers.GPT-4 is a Transformer-
+based model pre-trained to predict the next token in a document.The post-training
+alignment process results in improved performance on measures of factuality and
+adherence to desired behavior.A core component of this project was developing
+infrastructure and optimization methods that behave predictably across a wide
+range of scales.This allowed us to accurately predict some aspects of GPT-4’s
+performance based on models trained with no more than 1/1,000th the compute of
+GPT-4.1 Introduction
+This technical report presents GPT-4, a large multimodal model capable of processing image and
+text inputs and producing text outputs.GPT-4 技術報告
+OpenAI
+摘要
+本報告介紹了 GPT-4 的開發，這是一個大型、多模式模型，可以接受圖像和文本輸入，並生成文本輸出。儘管在許多現實情況下比人類不如，但 GPT-4 在各種專業和學術基準測試中表現出人類水平的性能，包括通過模擬的律師考試，得分為前 10% 的考生。GPT-4 是基於 Transformer 的模型，預先訓練來預測文檔中的下一個令牌。後訓練對齊過程提高了它在事實準確度和符合期望行為方面的性能。本項目的核心組件是開發基礎架構和優化方法，以在各種規模下具有可預測的行為。這使我們能夠根據使用不到 GPT-4 計算能力的模型正確預測 GPT-4 的某些方面性能。
+1 引言
+本技術報告介紹了 GPT-4，這是一個大型多模式模型，能夠處理圖像和文本輸入，生成文本輸出。Such models are an important area of study as they have the
+potential to be used in a wide range of applications, such as dialogue systems, text summarization,
+and machine translation.As such, they have been the subject of substantial interest and progress in
+recent years [1–34].One of the main goals of developing such models is to improve their ability to understand and generate
+natural language text, particularly in more complex and nuanced scenarios.To test its capabilities
+in such scenarios, GPT-4 was evaluated on a variety of exams originally designed for humans.In
+these evaluations it performs quite well and often outscores the vast majority of human test takers.For example, on a simulated bar exam, GPT-4 achieves a score that falls in the top 10% of test takers.This contrasts with GPT-3.5, which scores in the bottom 10%.On a suite of traditional NLP benchmarks, GPT-4 outperforms both previous large language models
+and most state-of-the-art systems (which often have benchmark-speciﬁc training or hand-engineering).這些模型是重要的研究領域，因為它們具有應用廣泛的潛力，例如對話系統、文本摘要和機器翻譯。因此，在近年來，這些模型一直受到廣泛的關注和進展[1-34]。開發這些模型的主要目標之一是提高它們理解和生成自然語言文本的能力，特別是在更複雜和微妙的情況下。為了測試其在這些情況下的能力，GPT-4被評估在一系列原本設計給人類的考試中。在這些評估中，它表現出色，常常超越大多數考試參加者的成績。例如，在一個模擬的酒吧考試中，GPT-4獲得的分數位於前10％的考試參加者中。這與GPT-3.5形成對比，後者的分數位於最低的10％。在一系列傳統的自然語言處理基準測試中，GPT-4不僅超越以前的大型語言模型，也優於大多數最先進的系統（這些系統經常具有基準特定的訓練或手動工程）。On the MMLU benchmark [ 35,36], an English-language suite of multiple-choice questions covering
+57 subjects, GPT-4 not only outperforms existing models by a considerable margin in English, but
+also demonstrates strong performance in other languages.On translated variants of MMLU, GPT-4
+surpasses the English-language state-of-the-art in 24 of 26 languages considered.We discuss these
+model capability results, as well as model safety improvements and results, in more detail in later
+sections.This report also discusses a key challenge of the project, developing deep learning infrastructure and
+optimization methods that behave predictably across a wide range of scales.This allowed us to make
+predictions about the expected performance of GPT-4 (based on small runs trained in similar ways)
+that were tested against the ﬁnal run to increase conﬁdence in our training.Despite its capabilities, GPT-4 has similar limitations to earlier GPT models [ 1,37,38]: it is not fully
+reliable (e.g.can suffer from “hallucinations”), has a limited context window, and does not learn
+Please cite this work as “OpenAI (2023)".在MMLU基準測試中[35,36]，這是一個英語的多項選擇問題套件，涵蓋57個科目，GPT-4不僅在英語方面大幅優於現有模型，而且在其他語言上的表現也非常強勁。在MMLU的翻譯變體中，GPT-4在26種語言中的24種語言中均超越了英語的最新水平。我們將在後面的章節中更詳細地討論這些模型能力結果，以及模型安全性的改進和結果。本報告還討論了該項目的一個關鍵挑戰，即開發能夠在各種規模上可預測地運作的深度學習基礎架構和優化方法。這使我們能夠對GPT-4的預期表現（基於類似方式訓練的小型運行）進行預測，並將其與最終運行進行測試以增強我們的訓練信心。儘管GPT-4具有類似於之前GPT模型[1,37,38]的功能，但它並不完全可靠（例如可能會出現“幻覺”），上下文窗口有限，並且無法學習。請引用此工作為“OpenAI（2023年)”。Full authorship contribution statements appear at the end of the
+document.arXiv:2303.08774v2  [cs.CL]  16 Mar 2023完整的作者貢獻聲明將在本文件的末尾出現.arXiv:2303.08774v2  [cs.CL]  16 Mar 2023from experience.Care should be taken when using the outputs of GPT-4, particularly in contexts
+where reliability is important.GPT-4’s capabilities and limitations create signiﬁcant and novel safety challenges, and we believe
+careful study of these challenges is an important area of research given the potential societal impact.This report includes an extensive system card (after the Appendix) describing some of the risks we
+foresee around bias, disinformation, over-reliance, privacy, cybersecurity, proliferation, and more.It also describes interventions we made to mitigate potential harms from the deployment of GPT-4,
+including adversarial testing with domain experts, and a model-assisted safety pipeline.2 Scope and Limitations of this Technical Report
+This report focuses on the capabilities, limitations, and safety properties of GPT-4.GPT-4 is a
+Transformer-style model [ 39] pre-trained to predict the next token in a document, using both publicly
+available data (such as internet data) and data licensed from third-party providers.從經驗來看，使用GPT-4的輸出時應該要小心，特別是在可靠性重要的情況下。GPT-4的能力和限制創造了重大和新穎的安全挑戰，我們認為仔細研究這些挑戰是研究重要領域，因為潛在的社會影響非常大。本報告包括一個廣泛的系統卡（附錄後）描述我們預見到的一些風險，例如偏見、錯誤信息、過度依賴、隱私、網絡安全、擴散等等。報告中還描述了我們采取的干預措施，以減輕GPT-4部署可能造成的潛在危害，包括與領域專家進行對抗測試和模型輔助安全通道。此技術報告的範圍和限制集中在GPT-4的能力、限制和安全性質上。GPT-4是一種Transformer風格的模型[39]，預先訓練以預測文檔中的下一個令牌，使用公開可用的數據（如互聯網數據）和從第三方供應商許可的數據。The model was
+then ﬁne-tuned using Reinforcement Learning from Human Feedback (RLHF) [ 40].Given both
+the competitive landscape and the safety implications of large-scale models like GPT-4, this report
+contains no further details about the architecture (including model size), hardware, training compute,
+dataset construction, training method, or similar.We are committed to independent auditing of our technologies, and shared some initial steps and
+ideas in this area in the system card accompanying this release.2We plan to make further technical
+details available to additional third parties who can advise us on how to weigh the competitive and
+safety considerations above against the scientiﬁc value of further transparency.3 Predictable Scaling
+A large focus of the GPT-4 project was building a deep learning stack that scales predictably.The
+primary reason is that for very large training runs like GPT-4, it is not feasible to do extensive
+model-speciﬁc tuning.To address this, we developed infrastructure and optimization methods that
+have very predictable behavior across multiple scales.該模型隨後使用人工回饋強化學習（RLHF）[40]進行了微調。考慮到像GPT-4這樣的大型模型的競爭環境和安全影響，本報告未涉及架構（包括模型大小）、硬件、訓練計算、數據集構建、訓練方法或類似技術的進一步詳細信息。我們致力於獨立審計我們的技術，並在附帶此版本的系統卡中分享了一些初步的步驟和想法。我們計劃向其他第三方提供進一步的技術細節，以便他們向我們建議如何權衡上述競爭和安全考慮與進一步透明度的科學價值。可預測的擴張是GPT-4項目的一個重要焦點，我們致力於構建一個能夠可預測地擴大的深度學習堆棧。主要原因是對於像GPT-4這樣的大型訓練運行，不可行進行廣泛的模型特定調整。為了解決這個問題，我們開發了基礎架構和優化方法，這些方法在多個尺度上有非常可預測的行為。These improvements allowed us to reliably
+predict some aspects of the performance of GPT-4 from smaller models trained using 1;000–
+10;000less compute.3.1 Loss Prediction
+The ﬁnal loss of properly-trained large language models is thought to be well approximated by power
+laws in the amount of compute used to train the model [41, 42, 2, 14, 15].To verify the scalability of our optimization infrastructure, we predicted GPT-4’s ﬁnal loss on our
+internal codebase (not part of the training set) by ﬁtting a scaling law with an irreducible loss term
+(as in Henighan et al.[15]):L(C) =aCb+c;from models trained using the same methodology
+but using at most 10,000x less compute than GPT-4.This prediction was made shortly after the run
+started, without use of any partial results.The ﬁtted scaling law predicted GPT-4’s ﬁnal loss with
+high accuracy (Figure 1).3.2 Scaling of Capabilities on HumanEval
+Having a sense of the capabilities of a model before training can improve decisions around alignment,
+safety, and deployment.這些改進使我們能夠可靠地從使用更少的計算資源(1,000至10,000倍)進行訓練的較小模型中預測GPT-4的某些性能方面。3.1 損失預測通過擬合帶有不可簡化損失項的比例定律(如Henighan等人所述)，我們預測了在內部代碼庫上(不是訓練集的一部分)的GPT-4的最終損失，使用的是相同的方法進行訓練，但是使用的計算資源最多不到GPT-4的十分之一。這個預測是在運行開始後不久進行的，沒有使用任何部分結果。擬合的比例定律以高精度預測了GPT-4的最終損失(見圖1)。3.2 能力在人類評估上的縮放在進行訓練之前了解模型的能力可以改進關於對齊、安全和部署的決策。In addition to predicting ﬁnal loss, we developed methodology to predict
+more interpretable metrics of capability.One such metric is pass rate on the HumanEval dataset [ 43],
+which measures the ability to synthesize Python functions of varying complexity.We successfully
+predicted the pass rate on a subset of the HumanEval dataset by extrapolating from models trained
+with at most 1;000less compute (Figure 2).For an individual problem in HumanEval, performance may occasionally worsen with scale.Despite
+these challenges, we ﬁnd an approximate power law relationship  EP[log(pass _rate(C))] = C k
+2In addition to the accompanying system card, OpenAI will soon publish additional thoughts on the social
+and economic implications of AI systems, including the need for effective regulation.2除了預測最終損失之外，我們開發了一種方法來預測更易於解釋的能力指標。其中一種指標是對人類評估數據集 [43] 的通過率，該數據集衡量了綜合 Python 函數的能力，這些函數具有不同的複雜度。我們成功預測了在小型的 HumanEval 子集上的通過率，通過對最多使用 1,000 倍計算的模型進行推斷 (圖2)。對於 HumanEval 中的個別問題，隨著規模擴大，性能偶爾可能會惡化。儘管存在這些挑戰，我們發現了一個近似的冪律關係 EP [log(pass_rate(C))] = C^k。除了相應的系統卡，OpenAI 很快將發表有關 AI 系統社會和經濟影響的其他想法，包括有效監管的需求。Observed
+Prediction
+gpt-4
+100p 10n 1µ 100µ 0.01 1
+Compute1.02.03.04.05.06.0Bits per wordOpenAI codebase next word predictionFigure 1.Performance of GPT-4 and smaller models.The metric is ﬁnal loss on a dataset derived
+from our internal codebase.This is a convenient, large dataset of code tokens which is not contained in
+the training set.We chose to look at loss because it tends to be less noisy than other measures across
+different amounts of training compute.A power law ﬁt to the smaller models (excluding GPT-4) is
+shown as the dotted line; this ﬁt accurately predicts GPT-4’s ﬁnal loss.The x-axis is training compute
+normalized so that GPT-4 is 1.Observed
+Prediction
+gpt-4
+1µ 10µ 100µ 0.001 0.01 0.1 1
+Compute012345– Mean Log Pass RateCapability prediction on 23 coding problems
+Figure 2.Performance of GPT-4 and smaller models.The metric is mean log pass rate on a subset of
+the HumanEval dataset.A power law ﬁt to the smaller models (excluding GPT-4) is shown as the dotted
+line; this ﬁt accurately predicts GPT-4’s performance.觀察到的
+預測
+gpt-4
+100p 10n 1µ 100µ 0.01 1
+計算1.02.03.04.05.06.0每字節位元數OpenAI程式庫下一個字的預測圖1.GPT-4及較小模型的性能。評估指標是從我們內部程式庫派生的數據集的最終損失。這是一個方便的、大規模的代碼令牌數據集，不包含在訓練集中。我們選擇觀察損失是因為它在不同程度的訓練計算下通常比其他測量更穩定。較小模型（不包括GPT-4）的冪律擬合線用虛線表示；這個擬合能夠準確預測GPT-4的最終損失。x軸是訓練計算歸一化，以使GPT-4的值為1。觀察到的
+預測
+gpt-4
+1µ 10µ 100µ 0.001 0.01 0.1 1
+計算012345– 平均對數通過率能力預測的23個編程問題
+圖2.GPT-4及較小模型的性能。評估指標是在HumanEval數據集的子集上的平均對數通過率。較小模型（不包括GPT-4）的冪律擬合線用虛線表示；這個擬合能夠準確預測GPT-4的性能。The x-axis is training compute normalized so that
+GPT-4 is 1.3x軸是以訓練計算被標準化，使得GPT-4的值為1.3。
