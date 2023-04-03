@@ -1,0 +1,25 @@
+{
+  "name": "chatgpt-starter",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@mui/material": "^5.11.6",
+    "@next/font": "13.1.6",
+    "eslint": "8.32.0",
+    "eslint-config-next": "13.1.6",
+    "gpt3-tokenizer": "^1.1.5",
+    "next": "13.1.6",
+    "openai": "^3.1.0",
+    "promptable": "^0.0.5",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  }
+}
